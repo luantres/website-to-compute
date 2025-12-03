@@ -4,24 +4,22 @@
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1" />
 
-    <!-- A-Frame compatível -->
+    <!-- A-Frame (versão compatível com MindAR) -->
     <script src="https://aframe.io/releases/1.3.0/aframe.min.js"></script>
 
-    <!-- MindAR -->
+    <!-- MindAR (versão correta UMD) -->
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/mind-ar@1.1.5/dist/mindar-image.prod.css" />
     <script src="https://cdn.jsdelivr.net/npm/mind-ar@1.1.5/dist/mindar-image.prod.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/mind-ar@1.1.5/dist/mindar-image-aframe.prod.js"></script>
 
     <style>
-      html,body { height:100%; margin:0; padding:0; overflow:hidden; }
-      .mindar-container { width:100% !important; height:100% !important; position:fixed; inset:0; }
-      video { object-fit: cover !important; }
+      html,body { margin:0; overflow:hidden; }
     </style>
   </head>
 
   <body>
     <a-scene
-      mindar-image="imageTargetSrc: ./targets.mind"
+      mindar-image="imageTargetSrc: targets.mind"
       color-space="display-p3"
       renderer="colorManagement: true"
       vr-mode-ui="enabled: false"
@@ -32,96 +30,28 @@
         <a-asset-item id="modelo" src="modelo.glb"></a-asset-item>
       </a-assets>
 
-      <!-- Câmera MindAR -->
-      <a-camera position="0 0 0" look-controls="enabled: false"></a-camera>
+      <a-camera look-controls="enabled: false"></a-camera>
 
       <!-- Target 0 -->
-      <a-entity mindar-image-target="targetIndex: 0" id="targetRoot">
+      <a-entity mindar-image-target="targetIndex: 0">
 
-        <!-- Helpers / luzes (sempre dentro do target para seguir o marker) -->
-        <a-entity id="scene-lights" position="0 0 0">
-          <a-entity light="type: ambient; intensity: 0.8"></a-entity>
-          <a-entity light="type: directional; intensity: 0.8" position="0 1 1"></a-entity>
-          <a-entity light="type: directional; intensity: 0.6" position="1 1 -0.5"></a-entity>
-        </a-entity>
+        <!-- LUZ -->
+        <a-entity light="type: ambient; intensity: 1"></a-entity>
 
-        <!-- Modelo 3D (será ajustado automaticamente pelo script abaixo) -->
-        <a-entity id="modelWrapper" position="0 0 0" rotation="0 0 0" scale="1 1 1">
-          <a-gltf-model id="myModel" src="#modelo" visible="true"></a-gltf-model>
-        </a-entity>
+        <!-- MODELO (mínimo possível) -->
+        <a-gltf-model
+          id="myModel"
+          src="#modelo"
+          position="0 0 0"
+          scale="0.5 0.5 0.5"
+        ></a-gltf-model>
 
-        <!-- plano de teste (visível para debug) -->
-        <a-plane id="debugPlane" color="blue" opacity="0.25" position="0 0 0" height="0.6" width="1" rotation="-90 0 0" visible="false"></a-plane>
+        <!-- Plano de referência -->
+        <a-plane color="blue" opacity="0.5" height="0.5" width="0.5" rotation="-90 0 0"></a-plane>
 
       </a-entity>
-
-      <!-- Script de auto-fit / centralização -->
-      <script>
-        // Ajusta automaticamente escala/posição do modelo quando carregado
-        document.addEventListener('DOMContentLoaded', function () {
-          const modelEl = document.querySelector('#myModel');
-          const wrapper = document.querySelector('#modelWrapper');
-          const debugPlane = document.querySelector('#debugPlane');
-
-          modelEl.addEventListener('model-loaded', (e) => {
-            try {
-              const obj = modelEl.getObject3D('mesh') || modelEl.getObject3D('gltf'); // pegar objeto three.js
-              if (!obj) { console.warn('model-loaded mas obj three.js não encontrado'); return; }
-
-              // Computa bounding box
-              const bbox = new THREE.Box3().setFromObject(obj);
-              const size = bbox.getSize(new THREE.Vector3());
-              const center = bbox.getCenter(new THREE.Vector3());
-
-              // Debug logs (aparecem no console)
-              console.log('Model bounding box size:', size);
-              console.log('Model center:', center);
-
-              // Mover o modelo para que o centro fique na origem do wrapper
-              // Para isso, aplicamos translate na geometria: encapsulamos o obj dentro do wrapper e ajustamos posição negativa do center
-              // O método mais simples: mover o objeto filho em relação ao wrapper:
-              obj.position.x -= center.x;
-              obj.position.y -= center.y;
-              obj.position.z -= center.z;
-
-              // Definir um tamanho alvo em metros (aprox) com base no target: por exemplo, queremos que o maior lado ocupe 0.6m
-              const targetSize = 0.6; // ajuste conforme desejar
-              const maxDim = Math.max(size.x, size.y, size.z);
-              let scale = 1;
-              if (maxDim > 0) {
-                scale = targetSize / maxDim;
-              }
-
-              // Aplica um factor adicional se necessário
-              const extraFactor = 1.0; // se quiser reduzir/encolher, use 0.5 etc
-              scale = scale * extraFactor;
-
-              wrapper.setAttribute('scale', `${scale} ${scale} ${scale}`);
-
-              // posiciona o wrapper de modo que a base do modelo fique sobre o target.
-              // Calcula bounding box depois do scale:
-              const newBBox = new THREE.Box3().setFromObject(obj);
-              const newSize = newBBox.getSize(new THREE.Vector3());
-              // colocar base em y=0 (se o modelo quiser ficar apoiado)
-              // A posição do wrapper.y = newSize.y/2 para que a base do objeto toque y=0
-              wrapper.setAttribute('position', `0 ${newSize.y / 2} 0`);
-
-              // Exibir plano de debug com mesmo tamanho do bbox (opcional)
-              debugPlane.setAttribute('visible', 'true'); // true para ver
-              // se quiser ativar debug:
-              // debugPlane.setAttribute('visible', 'true');
-              // debugPlane.setAttribute('width', newSize.x);
-              // debugPlane.setAttribute('height', newSize.z);
-              // debugPlane.setAttribute('position', `0 0 0`);
-
-              console.log('Applied scale:', scale, 'Wrapper pos:', wrapper.getAttribute('position'));
-            } catch (err) {
-              console.error('Erro ao auto-ajustar modelo:', err);
-            }
-          });
-        });
-      </script>
 
     </a-scene>
   </body>
 </html>
+
