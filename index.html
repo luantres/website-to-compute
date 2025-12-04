@@ -46,6 +46,18 @@
       z-index: 9999;
     }
   </style>
+   <style>
+      body {
+        margin: 0;
+        overflow: hidden;
+        touch-action: none; /* 🚀 Impede o scroll ao rotacionar */
+      }
+
+      /* Evita que o toque arraste a página em dispositivos antigos */
+      html, body {
+        overscroll-behavior: none;
+      }
+    </style>
 
   <!-- Touch rotate (corrigido, estável, sem deslocamento do modelo) -->
   <script>
