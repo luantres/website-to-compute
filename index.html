@@ -1,4 +1,4 @@
-<!DOCTYPE html>
+<<!DOCTYPE html>
 <html>
   <head>
     <meta charset="utf-8" />
@@ -10,7 +10,7 @@
     <!-- MindAR -->
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/mind-ar@1.1.5/dist/mindar-image.prod.css" />
     <script src="https://cdn.jsdelivr.net/npm/mind-ar@1.1.5/dist/mindar-image.prod.js"></script>
-    <script src="https://cdn.jsdelivr.net/npm/mind-ar@1.1.5/dist/mind-ar@1.1.5/dist/mindar-image-aframe.prod.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/mind-ar@1.1.5/dist/mindar-image-aframe.prod.js"></script>
 
     <style>
       html, body {
@@ -22,7 +22,7 @@
       }
     </style>
 
-    <!-- Componente para travar o modelo após detectar -->
+    <!-- Travar o modelo após primeira detecção -->
     <script>
       AFRAME.registerComponent("lock-after-detect", {
         init: function () {
@@ -30,14 +30,13 @@
           const mindar = sceneEl.systems["mindar-image"];
 
           this.el.addEventListener("targetFound", () => {
-            console.log("Target detectado — modelo travado.");
+            console.log("Target detectado — travando tracking.");
             this.el.setAttribute("visible", true);
-            mindar.stop(); // Para o tracking
+            mindar.stop(); // trava o tracking
           });
 
           this.el.addEventListener("targetLost", () => {
-            console.log("Target perdido — modelo permanece visível.");
-            this.el.setAttribute("visible", true); // Mantém visível
+            this.el.setAttribute("visible", true);
           });
         }
       });
@@ -47,30 +46,4 @@
 
   <body>
     <a-scene
-      mindar-image="imageTargetSrc: ./targets.mind"
-      color-space="display-p3"
-      renderer="colorManagement: true"
-      vr-mode-ui="enabled: false"
-      device-orientation-permission-ui="enabled: false"
-      embedded
-    >
-      <a-assets>
-        <a-asset-item id="modelo" src="modelo.glb"></a-asset-item>
-      </a-assets>
-
-      <a-camera look-controls="enabled: false"></a-camera>
-
-      <!-- Target + modelo -->
-      <a-entity mindar-image-target="targetIndex: 0" lock-after-detect visible="false">
-        <a-gltf-model
-          src="#modelo"
-          position="0 0.25 0"
-          rotation="90 0 0"
-          scale="0.002 0.002 0.002"
-        ></a-gltf-model>
-      </a-entity>
-
-    </a-scene>
-  </body>
-</html>
-
+      mindar-image="imageTargetSrc: ./targets.mind
