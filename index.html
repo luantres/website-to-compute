@@ -212,25 +212,34 @@ AFRAME.registerComponent("touch-rotate", {
       const wrapper = document.querySelector("#model-wrapper");
       const resetBtn = document.querySelector("#resetBtn");
 
-      // Armazena valores iniciais (rotações e escala) vindos do HTML
+      // Armazena valores iniciais (pos, rot e scale)
       document.addEventListener("DOMContentLoaded", () => {
-        // leitura da escala inicial do wrapper (atributo scale="x y z")
-        const scaleAttr = wrapper.getAttribute("scale");
-        if (scaleAttr) {
-          const parts = scaleAttr.split(/\s+/).map(parseFloat);
-          // salva no dataset para usar no reset
-          wrapper.dataset.initScale = JSON.stringify(parts);
+
+        // posição inicial
+        const posAttr = wrapper.getAttribute("position");
+        if (posAttr) {
+          const parts = posAttr.split(/\s+/).map(parseFloat);
+          wrapper.dataset.initPos = JSON.stringify(parts);
         } else {
-          wrapper.dataset.initScale = JSON.stringify([1,1,1]);
+          wrapper.dataset.initPos = JSON.stringify([0,0,0]);
         }
 
-        // leitura da rotação inicial do wrapper (atributo rotation="x y z")
+        // rotação inicial
         const rotAttr = wrapper.getAttribute("rotation");
         if (rotAttr) {
           const parts = rotAttr.split(/\s+/).map(parseFloat);
           wrapper.dataset.initRot = JSON.stringify(parts);
         } else {
           wrapper.dataset.initRot = JSON.stringify([0,0,0]);
+        }
+
+        // escala inicial
+        const scaleAttr = wrapper.getAttribute("scale");
+        if (scaleAttr) {
+          const parts = scaleAttr.split(/\s+/).map(parseFloat);
+          wrapper.dataset.initScale = JSON.stringify(parts);
+        } else {
+          wrapper.dataset.initScale = JSON.stringify([1,1,1]);
         }
       });
 
@@ -242,18 +251,22 @@ AFRAME.registerComponent("touch-rotate", {
         model.setAttribute("visible", "false");
       });
 
-      // Reset ao clicar no botão
+      // RESET
       resetBtn.addEventListener("click", () => {
-        // restaurar rotação
-        const initRot = JSON.parse(wrapper.dataset.initRot || "[0,0,0]");
-        // A-Frame usa radians internamente, mas aqui usamos degrees no atributo de texto.
-        // Como gravamos os valores diretamente do atributo rotation (degrees), vamos aplicar com set on object3D using THREE.Euler in radians.
-        const radX = THREE.Math.degToRad(initRot[0]);
-        const radY = THREE.Math.degToRad(initRot[1]);
-        const radZ = THREE.Math.degToRad(initRot[2]);
-        wrapper.object3D.rotation.set(radX, radY, radZ);
 
-        // restaurar escala
+        // posição
+        const initPos = JSON.parse(wrapper.dataset.initPos || "[0,0,0]");
+        wrapper.object3D.position.set(initPos[0], initPos[1], initPos[2]);
+
+        // rotação
+        const initRot = JSON.parse(wrapper.dataset.initRot || "[0,0,0]");
+        wrapper.object3D.rotation.set(
+          THREE.Math.degToRad(initRot[0]),
+          THREE.Math.degToRad(initRot[1]),
+          THREE.Math.degToRad(initRot[2])
+        );
+
+        // escala
         const initScale = JSON.parse(wrapper.dataset.initScale || "[1,1,1]");
         wrapper.object3D.scale.set(initScale[0], initScale[1], initScale[2]);
       });
