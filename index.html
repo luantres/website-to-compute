@@ -1,93 +1,64 @@
- <!DOCTYPE html>
+<!DOCTYPE html>
 <html>
   <head>
-    <meta charset="utf-8" />
-    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
 
+    <!-- A-Frame -->
     <script src="https://aframe.io/releases/1.3.0/aframe.min.js"></script>
-    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/mind-ar@1.1.5/dist/mindar-image.prod.css" />
-    <script src="https://cdn.jsdelivr.net/npm/mind-ar@1.1.5/dist/mindar-image.prod.js"></script>
-    <script src="https://cdn.jsdelivr.net/npm/mind-ar@1.1.5/dist/mindar-image-aframe.prod.js"></script>
 
-       <style>
-      html, body {
-        margin: 0;
-        padding: 0;
-        width: 100%;
-        height: 100%;
-        overflow: hidden;
-      }
+    <!-- MindAR -->
+    <script src="https://cdn.jsdelivr.net/npm/mind-ar@1.3.0/dist/mindar-image-aframe.prod.js"></script>
+
+    <style>
+      body { margin: 0; overflow: hidden; }
     </style>
+  </head>
+  <body>
 
     <script>
-      AFRAME.registerComponent("detach-model", {
-        init: function () {
-          const scene = this.el.sceneEl;
-          const mindar = scene.systems["mindar-image"];
-          const anchor = this.el;               // anchor do MindAR
-          const model = anchor.querySelector("a-gltf-model"); // modelo dentro do anchor
+      AFRAME.registerComponent("persist-model", {
+        init() {
+          const target = this.el;                      // O target detectado
+          const model = document.querySelector("#obj"); // O modelo 3D
 
-          let detached = false;
+          // Quando detecta o target → mostra o modelo
+          target.addEventListener("targetFound", () => {
+            model.setAttribute("visible", true);
+          });
 
-          anchor.addEventListener("targetFound", () => {
-            if (detached) return;
-            detached = true;
-
-            console.log("Target detectado → destacando modelo...");
-
-            // 1. Pega POSIÇÃO LOCAL do modelo dentro do anchor
-            const pos = model.getAttribute("position");
-            const rot = model.getAttribute("rotation");
-            const scale = model.getAttribute("scale");
-
-            // 2. REMOVE o modelo do anchor
-            anchor.removeChild(model);
-
-            // 3. ADICIONA o modelo diretamente na cena
-            scene.appendChild(model);
-
-            // 4. APLICA UMA POSIÇÃO FIXA NA FRENTE DA CÂMERA
-            //    (garante que SEMPRE aparece)
-            model.setAttribute("position", "0 0 -1.5");
-
-            // Se quiser manter a escala original:
-            model.setAttribute("scale", `${scale.x} ${scale.y} ${scale.z}`);
-
-            console.log("Modelo solto na cena.");
-
-            // 5. PARA o MindAR
-            setTimeout(() => {
-              mindar.stop();
-            }, 300);
+          // Quando perde o target → NÃO apaga o modelo
+          target.addEventListener("targetLost", () => {
+            // NÃO faz nada → modelo continua na tela
           });
         }
       });
     </script>
-  </head>
 
-  <body>
     <a-scene
-      mindar-image="imageTargetSrc: ./targets.mind"
-      renderer="colorManagement: true"
+      mindar-image="imageTargetSrc: ./target.mind;"
       embedded
+      color-space="sRGB"
       vr-mode-ui="enabled: false"
-      device-orientation-permission-ui="enabled: false"
-    >
+      device-orientation-permission-ui="enabled: false">
+
       <a-assets>
-        <a-asset-item id="modelo" src="modelo.glb"></a-asset-item>
+        <a-asset-item id="obj" src="model.glb"></a-asset-item>
       </a-assets>
 
-      <a-camera></a-camera>
+      <!-- O target carrega e dispara o script -->
+      <a-entity mindar-image-target="targetIndex: 0" persist-model></a-entity>
 
-      <!-- Anchor -->
-      <a-entity mindar-image-target="targetIndex: 0" detach-model>
-        <a-gltf-model
-          src="#modelo"
-          position="0 0.25 0"
-          rotation="90 0 0"
-          scale="0.002 0.002 0.002"
-        ></a-gltf-model>
+      <!-- O modelo fica fixo na cena (não dentro do target) -->
+      <a-entity
+        id="obj"
+        gltf-model="#obj"
+        visible="false"
+        position="0 0 -1"
+        scale="0.5 0.5 0.5">
       </a-entity>
+
+      <a-camera position="0 0 0"></a-camera>
     </a-scene>
   </body>
 </html>
