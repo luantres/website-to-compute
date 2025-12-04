@@ -20,6 +20,7 @@
         height: 100%;
         overflow: hidden;
       }
+
       .mindar-container {
         width: 100% !important;
         height: 100% !important;
@@ -27,30 +28,42 @@
         inset: 0;
         overflow: hidden;
       }
+
       video {
         object-fit: cover !important;
       }
     </style>
 
-    <!-- SCRIPT QUE MANTÉM O MODELO VISÍVEL -->
+    <!-- SCRIPT QUE FAZ O MODELO SEGUIR O TARGET E DEPOIS FICAR FIXO -->
     <script>
-    AFRAME.registerComponent("keep-visible", {
-      init() {
-        const target = this.el;
-        const model = document.querySelector("#modelo");
+      AFRAME.registerComponent("follow-target-once", {
+        init() {
+          const target = document.querySelector("#mindarTarget");
+          const model = document.querySelector("#model");
 
-        target.addEventListener("targetFound", () => {
-          model.object3D.visible = true;
-        });
+          target.addEventListener("targetFound", () => {
+            this.following = true;
+            model.object3D.visible = true;
+          });
 
-        // IMPORTANTE: NÃO DESATIVAR NADA AO PERDER TRACKING
-        target.addEventListener("targetLost", () => {
-          model.object3D.visible = true; // mantém visível
-        });
-      }
-    });
+          // Quando perder o target, apenas para de seguir
+          target.addEventListener("targetLost", () => {
+            this.following = false;
+          });
+        },
+
+        tick() {
+          const target = document.querySelector("#mindarTarget");
+          const model = document.querySelector("#model");
+
+          // Enquanto o target está detectado → copiar pose
+          if (this.following) {
+            model.object3D.position.copy(target.object3D.position);
+            model.object3D.rotation.copy(target.object3D.rotation);
+          }
+        }
+      });
     </script>
-
   </head>
 
   <body>
@@ -66,16 +79,17 @@
         <a-asset-item id="modelo" src="modelo.glb"></a-asset-item>
       </a-assets>
 
-      <a-camera position="0 0 0" look-controls="enabled: false"></a-camera>
+      <a-camera look-controls="enabled: false"></a-camera>
 
-      <!-- TARGET (SEM MODELO DENTRO) -->
-      <a-entity mindar-image-target="targetIndex: 0" keep-visible></a-entity>
+      <!-- TARGET -->
+      <a-entity id="mindarTarget" mindar-image-target="targetIndex: 0"></a-entity>
 
-      <!-- MODELO (FORA do target → agora NÃO SOME mais) -->
+      <!-- MODELO (FORA DO TARGET — AGORA FUNCIONA) -->
       <a-gltf-model
         id="model"
         src="#modelo"
         visible="false"
+        follow-target-once
         position="0 0.25 0"
         rotation="90 0 0"
         scale="0.002 0.002 0.002"
