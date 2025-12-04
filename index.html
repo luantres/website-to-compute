@@ -161,8 +161,8 @@ AFRAME.registerComponent("touch-rotate", {
         const midX = (e.touches[0].clientX + e.touches[1].clientX) / 2;
         const midY = (e.touches[0].clientY + e.touches[1].clientY) / 2;
 
-        const deltaX = (midX - window.innerWidth / 2) * 0.0005;
-        const deltaY = (midY - window.innerHeight / 2) * -0.0005;
+        const deltaX = (midX - window.innerWidth / 2) * -0.0005;
+        const deltaY = (midY - window.innerHeight / 2) * 0.0005;
 
         this.el.object3D.position.x += deltaX;
         this.el.object3D.position.y += deltaY;
