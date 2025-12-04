@@ -1,14 +1,14 @@
-<!DOCTYPE html>
-<html>
+ <!DOCTYPE html>
+<!--<html>
 <head>
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1" />
 
   <!-- A-Frame -->
-  <script src="https://aframe.io/releases/1.3.0/aframe.min.js"></script>
+ <!-- <script src="https://aframe.io/releases/1.3.0/aframe.min.js"></script>
 
   <!-- MindAR -->
-  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/mind-ar@1.1.5/dist/mindar-image.prod.css" />
+ <!-- <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/mind-ar@1.1.5/dist/mindar-image.prod.css" />
   <script src="https://cdn.jsdelivr.net/npm/mind-ar@1.1.5/dist/mindar-image.prod.js"></script>
   <script src="https://cdn.jsdelivr.net/npm/mind-ar@1.1.5/dist/mindar-image-aframe.prod.js"></script>
 
@@ -60,7 +60,7 @@
     </style>
 
   <!-- Touch rotate (corrigido, estável, sem deslocamento do modelo) -->
-  <script>
+ <!-- <script>
     AFRAME.registerComponent("touch-rotate", {
       init: function () {
         this.dragging = false;
@@ -111,10 +111,10 @@
     <a-camera look-controls="enabled: false"></a-camera>
 
     <!-- Anchor do Target -->
-    <a-entity id="anchor" mindar-image-target="targetIndex: 0">
+ <!--   <a-entity id="anchor" mindar-image-target="targetIndex: 0">
 
       <!-- WRAPPER que mantém o modelo no centro -->
-      <a-entity id="model-wrapper"
+   <!--   <a-entity id="model-wrapper"
         position="0 -0.20 0"
         rotation="0 0 0"
         scale="0.3 0.3 0.3"
@@ -122,7 +122,7 @@
       >
 
         <!-- Modelo dentro do wrapper -->
-        <a-gltf-model
+    <!--    <a-gltf-model
           id="model"
           src="#modelo"
           visible="false"
@@ -136,7 +136,7 @@
     </a-entity>
 
     <!-- Lógica de mostrar/esconder o modelo -->
-    <script>
+ <!--   <script>
       const anchor = document.querySelector("#anchor");
       const model = document.querySelector("#model");
 
@@ -152,4 +152,65 @@
   </a-scene>
 
 </body>
+</html> -->
+
+<!DOCTYPE html>
+<html>
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+
+    <!-- A-FRAME -->
+    <script src="https://aframe.io/releases/1.3.0/aframe.min.js"></script>
+
+    <!-- MindAR -->
+    <script src="https://cdn.jsdelivr.net/npm/mind-ar/dist/mindar-image-aframe.prod.js"></script>
+
+    <style>
+      body {
+        margin: 0;
+        overflow: hidden;
+        touch-action: none; /* 🚀 Impede o scroll ao rotacionar */
+      }
+
+      /* Evita que o toque arraste a página em dispositivos antigos */
+      html, body {
+        overscroll-behavior: none;
+      }
+    </style>
+  </head>
+
+  <body>
+    <script>
+      // Bloqueia comportamento padrão de toque na página
+      document.addEventListener('touchmove', function (event) {
+        event.preventDefault();
+      }, { passive: false });
+    </script>
+
+    <a-scene
+        mindar-image="imageTargetSrc: targets.mind;"
+        vr-mode-ui="enabled: false"
+        device-orientation-permission-ui="enabled: false"
+        renderer="colorManagement: true;"
+        embedded
+    >
+      <a-camera position="0 0 0" look-controls="enabled: false"></a-camera>
+
+      <!-- Anchor do AR -->
+      <a-entity mindar-image-target="targetIndex: 0">
+        <a-entity id="model"
+          gltf-model="model.glb"
+          position="0 0 0"
+          rotation="0 180 0"
+          scale="0.5 0.5 0.5"
+          gesture-handler>
+        </a-entity>
+      </a-entity>
+    </a-scene>
+
+    <!-- Gesture Handler -->
+    <script src="https://cdn.jsdelivr.net/npm/aframe-gesture-detector@3.0.3/dist/aframe-gesture-detector.min.js"></script>
+  </body>
 </html>
+
