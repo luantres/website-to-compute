@@ -206,68 +206,56 @@ AFRAME.registerComponent("touch-rotate", {
 
     </a-entity>
 
+    <!-- SCRIPT COMPLETO COM RESET CORRIGIDO -->
     <script>
       const anchor = document.querySelector("#anchor");
       const model = document.querySelector("#model");
       const wrapper = document.querySelector("#model-wrapper");
       const resetBtn = document.querySelector("#resetBtn");
 
-      // Armazena valores iniciais (pos, rot e scale)
-      document.addEventListener("DOMContentLoaded", () => {
+      let saved = false;
 
-        // posição inicial
-        const posAttr = wrapper.getAttribute("position");
-        if (posAttr) {
-          const parts = posAttr.split(/\s+/).map(parseFloat);
-          wrapper.dataset.initPos = JSON.stringify(parts);
-        } else {
-          wrapper.dataset.initPos = JSON.stringify([0,0,0]);
-        }
-
-        // rotação inicial
-        const rotAttr = wrapper.getAttribute("rotation");
-        if (rotAttr) {
-          const parts = rotAttr.split(/\s+/).map(parseFloat);
-          wrapper.dataset.initRot = JSON.stringify(parts);
-        } else {
-          wrapper.dataset.initRot = JSON.stringify([0,0,0]);
-        }
-
-        // escala inicial
-        const scaleAttr = wrapper.getAttribute("scale");
-        if (scaleAttr) {
-          const parts = scaleAttr.split(/\s+/).map(parseFloat);
-          wrapper.dataset.initScale = JSON.stringify(parts);
-        } else {
-          wrapper.dataset.initScale = JSON.stringify([1,1,1]);
-        }
-      });
-
+      // SALVAR A POSIÇÃO REAL DO TRACK NA PRIMEIRA VEZ QUE O TARGET É ENCONTRADO
       anchor.addEventListener("targetFound", () => {
         model.setAttribute("visible", "true");
+
+        if (!saved) {
+          const pos = wrapper.object3D.position;
+          wrapper.dataset.initPos = JSON.stringify([pos.x, pos.y, pos.z]);
+
+          const rot = wrapper.object3D.rotation;
+          wrapper.dataset.initRot = JSON.stringify([
+            THREE.Math.radToDeg(rot.x),
+            THREE.Math.radToDeg(rot.y),
+            THREE.Math.radToDeg(rot.z)
+          ]);
+
+          const sc = wrapper.object3D.scale;
+          wrapper.dataset.initScale = JSON.stringify([sc.x, sc.y, sc.z]);
+
+          saved = true;
+        }
       });
 
       anchor.addEventListener("targetLost", () => {
         model.setAttribute("visible", "false");
       });
 
-      // RESET
+      // RESET VOLTA EXATAMENTE PARA O TRACK
       resetBtn.addEventListener("click", () => {
+        if (!saved) return;
 
-        // posição
-        const initPos = JSON.parse(wrapper.dataset.initPos || "[0,0,0]");
+        const initPos = JSON.parse(wrapper.dataset.initPos);
         wrapper.object3D.position.set(initPos[0], initPos[1], initPos[2]);
 
-        // rotação
-        const initRot = JSON.parse(wrapper.dataset.initRot || "[0,0,0]");
+        const initRot = JSON.parse(wrapper.dataset.initRot);
         wrapper.object3D.rotation.set(
           THREE.Math.degToRad(initRot[0]),
           THREE.Math.degToRad(initRot[1]),
           THREE.Math.degToRad(initRot[2])
         );
 
-        // escala
-        const initScale = JSON.parse(wrapper.dataset.initScale || "[1,1,1]");
+        const initScale = JSON.parse(wrapper.dataset.initScale);
         wrapper.object3D.scale.set(initScale[0], initScale[1], initScale[2]);
       });
     </script>
