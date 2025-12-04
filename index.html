@@ -37,7 +37,7 @@
     AFRAME.registerComponent("keep-visible", {
       init() {
         const target = this.el;
-        const model = document.querySelector("#model");
+        const model = document.querySelector("#modelo");
 
         target.addEventListener("targetFound", () => {
           model.object3D.visible = true;
