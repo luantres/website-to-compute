@@ -12,31 +12,37 @@
     <script src="https://cdn.jsdelivr.net/npm/mind-ar@1.1.5/dist/mindar-image.prod.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/mind-ar@1.1.5/dist/mindar-image-aframe.prod.js"></script>
 
-    <style>
-      html, body {
-        margin: 0;
-        padding: 0;
-        width: 100%;
-        height: 100%;
-        overflow: hidden;
-      }
-    </style>
-
-    <!-- Travar o modelo após primeira detecção -->
     <script>
-      AFRAME.registerComponent("lock-after-detect", {
+      AFRAME.registerComponent("detach-after-detect", {
         init: function () {
-          const sceneEl = this.el.sceneEl;
-          const mindar = sceneEl.systems["mindar-image"];
+          const scene = this.el.sceneEl;
+          const mindar = scene.systems["mindar-image"];
 
-          this.el.addEventListener("targetFound", () => {
-            console.log("Target detectado — travando tracking.");
-            this.el.setAttribute("visible", true);
-            mindar.stop(); // trava o tracking
+          const targetEntity = this.el;               // o anchor
+          const model = targetEntity.children[0];     // modelo dentro do anchor
+
+          let clonedModel = null;
+
+          targetEntity.addEventListener("targetFound", () => {
+            console.log("Target encontrado → removendo dependência do tracking.");
+
+            // clona o modelo
+            clonedModel = model.cloneNode(true);
+            clonedModel.setAttribute("id", "modelo-solo");
+            clonedModel.object3D.copy(model.object3D); // copia posição/rotação/escala mundial
+
+            // adiciona modelo fora do anchor (livre)
+            scene.appendChild(clonedModel);
+
+            // para o tracking
+            mindar.stop();
+
+            // mantém visível
+            clonedModel.setAttribute("visible", true);
           });
 
-          this.el.addEventListener("targetLost", () => {
-            this.el.setAttribute("visible", true);
+          targetEntity.addEventListener("targetLost", () => {
+            console.log("Target perdido (modelo continua).");
           });
         }
       });
@@ -47,7 +53,6 @@
   <body>
     <a-scene
       mindar-image="imageTargetSrc: ./targets.mind"
-      color-space="display-p3"
       renderer="colorManagement: true"
       vr-mode-ui="enabled: false"
       device-orientation-permission-ui="enabled: false"
@@ -57,9 +62,10 @@
         <a-asset-item id="modelo" src="modelo.glb"></a-asset-item>
       </a-assets>
 
-      <a-camera look-controls="enabled: false"></a-camera>
+      <a-camera></a-camera>
 
-      <a-entity mindar-image-target="targetIndex: 0" lock-after-detect visible="false">
+      <!-- Anchor que só serve para detectar o target -->
+      <a-entity mindar-image-target="targetIndex: 0" detach-after-detect>
         <a-gltf-model
           src="#modelo"
           position="0 0.25 0"
@@ -67,6 +73,7 @@
           scale="0.002 0.002 0.002"
         ></a-gltf-model>
       </a-entity>
+
     </a-scene>
   </body>
 </html>
