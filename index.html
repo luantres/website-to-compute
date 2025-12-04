@@ -20,7 +20,6 @@
         height: 100%;
         overflow: hidden;
       }
-
       .mindar-container {
         width: 100% !important;
         height: 100% !important;
@@ -28,51 +27,55 @@
         inset: 0;
         overflow: hidden;
       }
-
       video {
         object-fit: cover !important;
       }
     </style>
 
-    <!-- SCRIPT QUE FAZ O MODELO SEGUIR O TARGET E DEPOIS FICAR FIXO -->
     <script>
-      AFRAME.registerComponent("follow-target-once", {
+      AFRAME.registerComponent("fix-after-lost", {
         init() {
-          const target = document.querySelector("#mindarTarget");
           const model = document.querySelector("#model");
+          const target = this.el;
 
           target.addEventListener("targetFound", () => {
-            this.following = true;
-            model.object3D.visible = true;
+            console.log("TARGET FOUND");
           });
 
-          // Quando perder o target, apenas para de seguir
           target.addEventListener("targetLost", () => {
-            this.following = false;
+            console.log("TARGET LOST — travando modelo");
+
+            // 1 – Pega a posição mundial
+            const worldPos = new THREE.Vector3();
+            model.object3D.getWorldPosition(worldPos);
+
+            // 2 – Pega rotação mundial
+            const worldRot = new THREE.Euler();
+            worldRot.copy(model.object3D.getWorldRotation());
+
+            // 3 – Solta o modelo do target colocando na cena
+            const scene = document.querySelector("a-scene");
+            scene.appendChild(model);
+
+            // 4 – Aplica posição/rotação mundial
+            model.object3D.position.copy(worldPos);
+            model.object3D.rotation.copy(worldRot);
+
+            // 5 – Mantém visível permanentemente
+            model.setAttribute("visible", true);
           });
-        },
-
-        tick() {
-          const target = document.querySelector("#mindarTarget");
-          const model = document.querySelector("#model");
-
-          // Enquanto o target está detectado → copiar pose
-          if (this.following) {
-            model.object3D.position.copy(target.object3D.position);
-            model.object3D.rotation.copy(target.object3D.rotation);
-          }
         }
       });
     </script>
+
   </head>
 
   <body>
     <a-scene
       mindar-image="imageTargetSrc: ./targets.mind"
-      color-space="display-p3"
-      renderer="colorManagement: true"
       vr-mode-ui="enabled: false"
       device-orientation-permission-ui="enabled: false"
+      renderer="colorManagement: true"
       embedded
     >
       <a-assets>
@@ -82,18 +85,19 @@
       <a-camera look-controls="enabled: false"></a-camera>
 
       <!-- TARGET -->
-      <a-entity id="mindarTarget" mindar-image-target="targetIndex: 0"></a-entity>
+      <a-entity id="target" mindar-image-target="targetIndex: 0" fix-after-lost>
 
-      <!-- MODELO (FORA DO TARGET — AGORA FUNCIONA) -->
-      <a-gltf-model
-        id="model"
-        src="#modelo"
-        visible="false"
-        follow-target-once
-        position="0 0.25 0"
-        rotation="90 0 0"
-        scale="0.002 0.002 0.002"
-      ></a-gltf-model>
+        <!-- MODELO DENTRO DO TARGET (AGORA ELE APARECE!) -->
+        <a-gltf-model
+          id="model"
+          src="#modelo"
+          position="0 0.25 0"
+          rotation="90 0 0"
+          scale="0.002 0.002 0.002"
+          visible="true"
+        ></a-gltf-model>
+
+      </a-entity>
 
     </a-scene>
   </body>
