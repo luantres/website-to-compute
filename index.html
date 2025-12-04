@@ -167,6 +167,26 @@
     <script src="https://cdn.jsdelivr.net/npm/mind-ar/dist/mindar-image-aframe.prod.js"></script>
 
     <style>
+
+      html, body {
+      margin: 0;
+      padding: 0;
+      width: 100%;
+      height: 100%;
+      overflow: hidden;
+    }
+
+    .mindar-container {
+      width: 100% !important;
+      height: 100% !important;
+      position: fixed;
+      inset: 0;
+      overflow: hidden;
+    }
+
+    video {
+      object-fit: cover !important;
+    }
       body {
         margin: 0;
         overflow: hidden;
