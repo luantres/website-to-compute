@@ -1,16 +1,15 @@
-<!DOCTYPE html>
+ <!DOCTYPE html>
 <html>
   <head>
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1" />
 
     <script src="https://aframe.io/releases/1.3.0/aframe.min.js"></script>
-
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/mind-ar@1.1.5/dist/mindar-image.prod.css" />
     <script src="https://cdn.jsdelivr.net/npm/mind-ar@1.1.5/dist/mindar-image.prod.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/mind-ar@1.1.5/dist/mindar-image-aframe.prod.js"></script>
 
-        <style>
+       <style>
       html, body {
         margin: 0;
         padding: 0;
@@ -21,61 +20,58 @@
     </style>
 
     <script>
-      AFRAME.registerComponent("detach-after-detect", {
+      AFRAME.registerComponent("detach-model", {
         init: function () {
           const scene = this.el.sceneEl;
           const mindar = scene.systems["mindar-image"];
-          const anchor = this.el;
-          const original = anchor.children[0];
+          const anchor = this.el;               // anchor do MindAR
+          const model = anchor.querySelector("a-gltf-model"); // modelo dentro do anchor
 
-          let created = false;
+          let detached = false;
 
           anchor.addEventListener("targetFound", () => {
-            if (created) return;
-            created = true;
+            if (detached) return;
+            detached = true;
 
-            console.log("Target encontrado — aguardando estabilização...");
+            console.log("Target detectado → destacando modelo...");
 
-            // *** ESPERA 100ms PARA O ANCHOR TER POSIÇÃO REAL ***
+            // 1. Pega POSIÇÃO LOCAL do modelo dentro do anchor
+            const pos = model.getAttribute("position");
+            const rot = model.getAttribute("rotation");
+            const scale = model.getAttribute("scale");
+
+            // 2. REMOVE o modelo do anchor
+            anchor.removeChild(model);
+
+            // 3. ADICIONA o modelo diretamente na cena
+            scene.appendChild(model);
+
+            // 4. APLICA UMA POSIÇÃO FIXA NA FRENTE DA CÂMERA
+            //    (garante que SEMPRE aparece)
+            model.setAttribute("position", "0 0 -1.5");
+
+            // Se quiser manter a escala original:
+            model.setAttribute("scale", `${scale.x} ${scale.y} ${scale.z}`);
+
+            console.log("Modelo solto na cena.");
+
+            // 5. PARA o MindAR
             setTimeout(() => {
-              console.log("Gerando modelo independente.");
-
-              const pos = new THREE.Vector3();
-              const quat = new THREE.Quaternion();
-              const scale = new THREE.Vector3();
-
-              original.object3D.getWorldPosition(pos);
-              original.object3D.getWorldQuaternion(quat);
-              original.object3D.getWorldScale(scale);
-
-              // cria novo modelo solto
-              const newModel = document.createElement("a-gltf-model");
-              newModel.setAttribute("src", "#modelo");
-              newModel.setAttribute("position", `${pos.x} ${pos.y} ${pos.z}`);
-              newModel.object3D.quaternion.copy(quat);
-              newModel.setAttribute("scale", `${scale.x} ${scale.y} ${scale.z}`);
-
-              scene.appendChild(newModel);
-
-              // desliga tracking
               mindar.stop();
-
-              console.log("Modelo independente criado com sucesso.");
-            }, 100);
+            }, 300);
           });
         }
       });
     </script>
-
   </head>
 
   <body>
     <a-scene
       mindar-image="imageTargetSrc: ./targets.mind"
       renderer="colorManagement: true"
-      device-orientation-permission-ui="enabled: false"
-      vr-mode-ui="enabled: false"
       embedded
+      vr-mode-ui="enabled: false"
+      device-orientation-permission-ui="enabled: false"
     >
       <a-assets>
         <a-asset-item id="modelo" src="modelo.glb"></a-asset-item>
@@ -83,7 +79,8 @@
 
       <a-camera></a-camera>
 
-      <a-entity mindar-image-target="targetIndex: 0" detach-after-detect>
+      <!-- Anchor -->
+      <a-entity mindar-image-target="targetIndex: 0" detach-model>
         <a-gltf-model
           src="#modelo"
           position="0 0.25 0"
@@ -91,7 +88,7 @@
           scale="0.002 0.002 0.002"
         ></a-gltf-model>
       </a-entity>
-
     </a-scene>
   </body>
 </html>
+
