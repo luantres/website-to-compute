@@ -124,19 +124,29 @@ AFRAME.registerComponent("touch-rotate", {
     canvas.addEventListener("touchmove", e => {
       if (!this.dragging) return;
 
-     // 1 dedo → rotação inteligente (X ou Y conforme direção)
+// 1 dedo → rotação inteligente (X, Y ou Z conforme direção)
 if (e.touches.length === 1) {
   const dx = e.touches[0].clientX - this.startX;
   const dy = e.touches[0].clientY - this.startY;
 
-  if (Math.abs(dx) > Math.abs(dy)) {
-    // movimento horizontal → rotaciona Y
+  const adx = Math.abs(dx);
+  const ady = Math.abs(dy);
+
+  // diferença entre eixos para detectar diagonal
+  const diff = Math.abs(adx - ady);
+
+  if (diff < 20) {
+    // movimento diagonal → girar somente o Z
+    this.el.object3D.rotation.z = this.startRotZ - dx * 0.01;
+  } else if (adx > ady) {
+    // movimento horizontal → girar Y
     this.el.object3D.rotation.y = this.startRotY - dx * 0.01;
   } else {
-    // movimento vertical → rotaciona X
+    // movimento vertical → girar X
     this.el.object3D.rotation.x = this.startRotX - dy * 0.01;
   }
 }
+
 
 
       // 2 dedos → zoom + rot Z
