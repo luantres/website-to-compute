@@ -21,38 +21,44 @@
         overflow: hidden;
       }
     </style>
-
+    
     <script>
       AFRAME.registerComponent("detach-after-detect", {
         init: function () {
           const scene = this.el.sceneEl;
           const mindar = scene.systems["mindar-image"];
 
-          const targetEntity = this.el;               // o anchor
-          const model = targetEntity.children[0];     // modelo dentro do anchor
+          const anchor = this.el;               // anchor do MindAR
+          const originalModel = anchor.children[0]; // modelo dentro do anchor
 
-          let clonedModel = null;
+          let created = false;
 
-          targetEntity.addEventListener("targetFound", () => {
-            console.log("Target encontrado → removendo dependência do tracking.");
+          anchor.addEventListener("targetFound", () => {
+            if (created) return; // cria apenas 1 vez
+            created = true;
 
-            // clona o modelo
-            clonedModel = model.cloneNode(true);
-            clonedModel.setAttribute("id", "modelo-solo");
-            clonedModel.object3D.copy(model.object3D); // copia posição/rotação/escala mundial
+            console.log("Target encontrado → gerando modelo independente");
 
-            // adiciona modelo fora do anchor (livre)
-            scene.appendChild(clonedModel);
+            // pega posição/rotação/escala em WORLD SPACE
+            const pos = new THREE.Vector3();
+            const rot = new THREE.Euler();
+            const scale = new THREE.Vector3();
+            originalModel.object3D.getWorldPosition(pos);
+            originalModel.object3D.getWorldQuaternion(rot);
+            originalModel.object3D.getWorldScale(scale);
+
+            // cria novo modelo totalmente fora do tracking
+            const newModel = document.createElement("a-gltf-model");
+            newModel.setAttribute("src", "#modelo");
+            newModel.setAttribute("position", `${pos.x} ${pos.y} ${pos.z}`);
+            newModel.object3D.quaternion.copy(rot);
+            newModel.setAttribute("scale", `${scale.x} ${scale.y} ${scale.z}`);
+
+            newModel.setAttribute("id", "modelo-fixo");
+            scene.appendChild(newModel);
 
             // para o tracking
             mindar.stop();
-
-            // mantém visível
-            clonedModel.setAttribute("visible", true);
-          });
-
-          targetEntity.addEventListener("targetLost", () => {
-            console.log("Target perdido (modelo continua).");
           });
         }
       });
@@ -74,7 +80,7 @@
 
       <a-camera></a-camera>
 
-      <!-- Anchor que só serve para detectar o target -->
+      <!-- Anchor do MindAR -->
       <a-entity mindar-image-target="targetIndex: 0" detach-after-detect>
         <a-gltf-model
           src="#modelo"
