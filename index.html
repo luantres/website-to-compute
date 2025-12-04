@@ -8,97 +8,58 @@
     <script src="https://aframe.io/releases/1.3.0/aframe.min.js"></script>
 
     <!-- MindAR -->
-    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/mind-ar@1.1.5/dist/mindar-image.prod.css" />
-    <script src="https://cdn.jsdelivr.net/npm/mind-ar@1.1.5/dist/mindar-image.prod.js"></script>
-    <script src="https://cdn.jsdelivr.net/npm/mind-ar@1.1.5/dist/mindar-image-aframe.prod.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/mind-ar@1.1.7/dist/mindar-image-aframe.prod.js"></script>
 
     <style>
-      html, body {
-        margin: 0;
-        padding: 0;
-        width: 100%;
-        height: 100%;
-        overflow: hidden;
-      }
-      .mindar-container {
-        width: 100% !important;
-        height: 100% !important;
-        position: fixed;
-        inset: 0;
-        overflow: hidden;
-      }
-      video {
-        object-fit: cover !important;
-      }
+      body { margin: 0; overflow: hidden; }
     </style>
-
-    <script>
-      AFRAME.registerComponent("fix-after-lost", {
-        init() {
-          const model = document.querySelector("#model");
-          const target = this.el;
-
-          target.addEventListener("targetFound", () => {
-            console.log("TARGET FOUND");
-          });
-
-          target.addEventListener("targetLost", () => {
-            console.log("TARGET LOST — travando modelo");
-
-            // 1 – Pega a posição mundial
-            const worldPos = new THREE.Vector3();
-            model.object3D.getWorldPosition(worldPos);
-
-            // 2 – Pega rotação mundial
-            const worldRot = new THREE.Euler();
-            worldRot.copy(model.object3D.getWorldRotation());
-
-            // 3 – Solta o modelo do target colocando na cena
-            const scene = document.querySelector("a-scene");
-            scene.appendChild(model);
-
-            // 4 – Aplica posição/rotação mundial
-            model.object3D.position.copy(worldPos);
-            model.object3D.rotation.copy(worldRot);
-
-            // 5 – Mantém visível permanentemente
-            model.setAttribute("visible", true);
-          });
-        }
-      });
-    </script>
-
   </head>
 
   <body>
     <a-scene
-      mindar-image="imageTargetSrc: ./targets.mind"
+      mindar-image="imageTargetSrc: ./assets/targets.mind;"
       vr-mode-ui="enabled: false"
       device-orientation-permission-ui="enabled: false"
-      renderer="colorManagement: true"
       embedded
     >
       <a-assets>
-        <a-asset-item id="modelo" src="modelo.glb"></a-asset-item>
+        <a-asset-item id="model" src="./assets/model.glb"></a-asset-item>
       </a-assets>
 
-      <a-camera look-controls="enabled: false"></a-camera>
+      <!-- O target (necessário mas invisível) -->
+      <a-image id="target" mindar-image-target="targetIndex: 0" opacity="0"></a-image>
 
-      <!-- TARGET -->
-      <a-entity id="target" mindar-image-target="targetIndex: 0" fix-after-lost>
-
-        <!-- MODELO DENTRO DO TARGET (AGORA ELE APARECE!) -->
-        <a-gltf-model
-          id="model"
-          src="#modelo"
-          position="0 0.25 0"
-          rotation="90 0 0"
-          scale="0.002 0.002 0.002"
-          visible="true"
-        ></a-gltf-model>
-
-      </a-entity>
+      <!-- Modelo -->
+      <a-gltf-model
+        id="obj"
+        src="#model"
+        position="0 0 0"
+        rotation="0 0 0"
+        scale="0.2 0.2 0.2"
+        visible="false"
+      ></a-gltf-model>
 
     </a-scene>
+
+    <script>
+      document.addEventListener("DOMContentLoaded", () => {
+        const target = document.querySelector("#target");
+        const model = document.querySelector("#obj");
+
+        let alreadyShown = false;  // garante que só aparece depois da primeira detecção
+
+        target.addEventListener("targetFound", () => {
+          model.setAttribute("visible", true);
+          alreadyShown = true;
+        });
+
+        target.addEventListener("targetLost", () => {
+          if (alreadyShown) {
+            // mantém o modelo visível mesmo sem o target
+            model.setAttribute("visible", true);
+          }
+        });
+      });
+    </script>
   </body>
 </html>
