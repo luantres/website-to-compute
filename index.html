@@ -49,6 +49,7 @@
       z-index: 9999;
     }
 
+    /* Botão reset */
     #resetBtn {
       position: absolute;
       right: 12px;
@@ -66,7 +67,7 @@
     }
   </style>
 
-  <!-- TOUCH ROTATE + ZOOM (ATUALIZADO SOMENTE ZOOM) -->
+  <!-- TOUCH ROTATE + ZOOM (ATUALIZADO) -->
   <script>
 AFRAME.registerComponent("touch-rotate", {
   schema: {
@@ -77,6 +78,7 @@ AFRAME.registerComponent("touch-rotate", {
   init: function () {
     this.dragging = false;
 
+    // Rotação
     this.startX = 0;
     this.startY = 0;
 
@@ -84,15 +86,35 @@ AFRAME.registerComponent("touch-rotate", {
     this.startRotY = 0;
     this.startRotZ = 0;
 
+    // Zoom
     this.startDistance = 0;
     this.startScale = this.el.object3D.scale.x || 1;
 
     const canvas = this.el.sceneEl.canvas;
+    const scene = this.el.sceneEl;
+    const camera = scene.camera;
+    const model = this.el; // model-wrapper
+    const raycaster = new THREE.Raycaster();
 
+    // Impede scroll/zoom do navegador
     const prevent = (e) => e.preventDefault();
     ["touchstart", "touchmove", "touchend"].forEach(ev =>
       canvas.addEventListener(ev, prevent, { passive: false })
     );
+
+    function isTouchOverModel(t1, t2) {
+      const touches = [t1, t2];
+      for (let t of touches) {
+        const x = (t.clientX / window.innerWidth) * 2 - 1;
+        const y = -(t.clientY / window.innerHeight) * 2 + 1;
+
+        raycaster.setFromCamera({ x, y }, camera);
+        const hits = raycaster.intersectObject(model.object3D, true);
+
+        if (hits.length === 0) return false; // UM toque fora → cancela
+      }
+      return true; // ambos tocaram o modelo
+    }
 
     canvas.addEventListener("touchstart", e => {
       this.dragging = true;
@@ -106,6 +128,12 @@ AFRAME.registerComponent("touch-rotate", {
       }
 
       if (e.touches.length === 2) {
+        // só ativa zoom se toque está no modelo
+        if (!isTouchOverModel(e.touches[0], e.touches[1])) {
+          this.dragging = false;
+          return;
+        }
+
         const dx = e.touches[1].clientX - e.touches[0].clientX;
         const dy = e.touches[1].clientY - e.touches[0].clientY;
 
@@ -114,18 +142,13 @@ AFRAME.registerComponent("touch-rotate", {
 
         this.startAngle = Math.atan2(dy, dx);
         this.startRotZ = this.el.object3D.rotation.z;
-
-        // ponto inicial do zoom
-        this.startMid = {
-          x: (e.touches[0].clientX + e.touches[1].clientX) / 2,
-          y: (e.touches[0].clientY + e.touches[1].clientY) / 2
-        };
       }
     });
 
     canvas.addEventListener("touchmove", e => {
       if (!this.dragging) return;
 
+      // --- 1 dedo → rotação inteligente ---
       if (e.touches.length === 1) {
         const dx = e.touches[0].clientX - this.startX;
         const dy = e.touches[0].clientY - this.startY;
@@ -143,34 +166,37 @@ AFRAME.registerComponent("touch-rotate", {
         }
       }
 
+      // --- 2 dedos → ZOOM CONTROLADO ---
       if (e.touches.length === 2) {
+
+        if (!isTouchOverModel(e.touches[0], e.touches[1])) return;
+
         const dx = e.touches[1].clientX - e.touches[0].clientX;
         const dy = e.touches[1].clientY - e.touches[0].clientY;
 
+        // ---- ZOOM ----
         const distance = Math.sqrt(dx * dx + dy * dy);
         let scaleFactor = distance / this.startDistance;
 
         let newScale = this.startScale * scaleFactor;
         newScale = Math.max(this.data.minScale, Math.min(this.data.maxScale, newScale));
 
-        // ---------- NOVO ZOOM PRECISO POR TOQUE ----------
+        this.el.object3D.scale.set(newScale, newScale, newScale);
+
+        // ---- COMPENSAÇÃO DO ZOOM (continua funcionando) ----
         const midX = (e.touches[0].clientX + e.touches[1].clientX) / 2;
         const midY = (e.touches[0].clientY + e.touches[1].clientY) / 2;
 
-        const moveX = (midX - this.startMid.x) * -0.002;
-        const moveY = (midY - this.startMid.y) * 0.002;
+        const deltaX = (midX - window.innerWidth / 2) * -0.0005;
+        const deltaY = (midY - window.innerHeight / 2) * 0.0005;
 
-        this.el.object3D.position.x += moveX;
-        this.el.object3D.position.y += moveY;
+        this.el.object3D.position.x += deltaX;
+        this.el.object3D.position.y += deltaY;
 
-        this.startMid.x = midX;
-        this.startMid.y = midY;
-
-        this.el.object3D.scale.set(newScale, newScale, newScale);
-
-        // Rotação Z
+        // ---- ROT Z ----
         const angle = Math.atan2(dy, dx);
         const deltaAngle = angle - this.startAngle;
+
         this.el.object3D.rotation.z = this.startRotZ + deltaAngle;
       }
     });
@@ -226,6 +252,7 @@ AFRAME.registerComponent("touch-rotate", {
 
     </a-entity>
 
+    <!-- RESET -->
     <script>
       const anchor = document.querySelector("#anchor");
       const model = document.querySelector("#model");
